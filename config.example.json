@@ -8,17 +8,20 @@
     {
       "entity": "input_number.outdoor_temperature",
       "label": "VENKU",
-      "unit": "°C"
+      "unit": "°C",
+      "role": "outdoor"
     },
     {
       "entity": "input_number.natroom_temperature",
       "label": "DOMA",
-      "unit": "°C"
+      "unit": "°C",
+      "role": "indoor"
     },
     {
       "entity": "input_number.outdoor_effective_temperature",
       "label": "MAX DNES",
-      "unit": "°C"
+      "unit": "°C",
+      "role": "outdoor_max"
     }
   ],
   "schedule": {
@@ -27,6 +30,6 @@
     "day_minutes": 30,
     "night_minutes": 120
   },
-  "empty_calendar_quote": "Můžeme dělat malé věci s velkou láskou.",
-  "empty_calendar_author": "Matka Tereza"
+  "empty_calendar_quote_entity": "input_text.eink_frame_quote",
+  "empty_calendar_author_entity": "input_text.eink_frame_quote_author"
 }

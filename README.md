@@ -1,8 +1,7 @@
 # E-ink rámeček — sjednocené zadání a nákup
 
 Aktuální stav k 8. říjnu 2026. Toto je zadání poslední verze projektu.
-Zdrojové soubory jsou v tomto repozitáři; [úplný výpis kódu](output/cely-kod.md)
-je přiložený také jako jeden čitelný soubor.
+Zdrojové soubory jsou v tomto repozitáři; [rozcestník zdrojů](output/cely-kod.md) obsahuje odkazy na konkrétní soubory.
 
 ## Cíl a architektura
 
@@ -137,7 +136,7 @@ Výdrž celé sestavy nelze odvodit z klidového proudu samotného ESP32.
 - Všechna input_number jsou hodnoty dodané HA; program předpověď ani maximum
   sám nepočítá. Jejich aktuálnost zajišťují automatizace v HA.
 - Agenda načítá dnešek a zítřek (`agenda_days: 2`, nastavitelné 1–7 dní).
-- Citát a autor jsou nastavitelné, výchozí text odpovídá referenci.
+- Citát a autor se načítají z textových pomocníků HA; demo používá ukázkový text.
 
 ### Vzhled
 
@@ -215,7 +214,7 @@ omezují přesnost začátků/konců. Zobrazené hodnoty zůstávají během sp�
 ## Aktuální stav a zbývající ověření
 
 Renderer, API, lokální add-on, firmware a náhledy jsou připravené ve zdrojích.
-Po refaktoru prošlo všech 9 testů včetně lokálního HTTP přenosu.
+Prošlo všech 12 testů rendereru, pomocníků, plánování i lokálního HTTP přenosu.
 Black a isort nemají nálezy; Pylint hodnotí kód 10,00/10. Všechny tři
 náhledy zůstaly pixel po pixelu shodné s původní verzí.
 Kompilace ESP32 se nedokončila kvůli nedostatku místa pro toolchain/framework.
@@ -238,7 +237,7 @@ To jsou konkrétní kroky před potvrzením hotového bateriového výrobku.
 | [tests/test_renderer.py](tests/test_renderer.py) | Automatické testy |
 | [docs/mereni.md](docs/mereni.md) | Měření spotřeby, rozměrů a bateriový návrh |
 | [docs/protokol.md](docs/protokol.md) | Obrazový protokol EIF1 |
-| [output/cely-kod.md](output/cely-kod.md) | Kompletní čitelný výpis zdrojů |
+| [output/cely-kod.md](output/cely-kod.md) | Odkazy na konkrétní zdrojové soubory |
 
 ### Náhledy na počítači
 
@@ -287,7 +286,7 @@ pio device monitor
 ```sh
 cp config.example.json config.json
 cp .env.example .env
-# Lokálně doplň HA_URL, HA_TOKEN a FRAME_TOKEN v .env.
+# Uprav .env podle popisu níže.
 docker compose up --build -d
 ```
 
@@ -295,13 +294,87 @@ Tento režim používá dlouhodobý HA token; režim add-onu na HA OS používá
 interní Supervisor token. Přihlašovací údaje jsou v ignorovaných místních
 souborech `.env`, `config.json` a `firmware/include/secrets.h`.
 
+### Lokální nastavení HA_URL, HA_TOKEN a FRAME_TOKEN
+
+Pro samostatný Docker server uprav pouze místní `.env`:
+
+```dotenv
+HA_URL=http://homeassistant.local:8123
+HA_TOKEN=SEM_VLOZ_DLOUHODOBY_TOKEN_Z_HOME_ASSISTANTU
+FRAME_TOKEN=SEM_VLOZ_SAMOSTATNY_NAHODNY_TOKEN
+```
+
+`HA_URL` je adresa Home Assistantu (port 8123), nikoli obrazového serveru
+(port 8080). Uvedená adresa je také výchozí hodnota programu, když proměnná
+není nastavená. Pokud počítač nerozpozná `homeassistant.local`, použij IP HA.
+`HA_TOKEN` vytvoř v uživatelském profilu HA v části zabezpečení jako dlouhodobý
+přístupový token. `FRAME_TOKEN` je jiný token; vygeneruj jej například příkazem
+`python3 -c "import secrets; print(secrets.token_urlsafe(32))"` a stejný řetězec
+vlož do `firmware/include/secrets.h`. Tokeny ukládej pouze lokálně.
+
+Docker Compose načte `.env` automaticky. Při přímém spuštění Pythonu `.env`
+automaticky nečteme: nastav stejné proměnné pomocí `export HA_URL=...`,
+`export HA_TOKEN='...'` a `export FRAME_TOKEN='...'`, potom spusť
+`python3 -m renderer.app --config config.json --host 0.0.0.0`.
+
+**Na HA OS** zadáváš jen `frame_token` v konfiguraci add-onu. `HA_URL` a
+`HA_TOKEN` nastaví add-on automaticky na interní Supervisor API a jeho token;
+`.env` ani dlouhodobý HA token se zde nepoužívají.
+
+### Citát a autor z pomocníků Home Assistantu
+
+V HA otevři Nastavení → Zařízení a služby → Pomocníci → Vytvořit pomocníka →
+Text. Vytvoř dva textové pomocníky, ověř jejich entity_id a vyplň jejich hodnoty:
+
+| Údaj | Výchozí entity_id | Příklad hodnoty |
+|---|---|---|
+| Citát | `input_text.eink_frame_quote` | Můžeme dělat malé věci s velkou láskou. |
+| Autor | `input_text.eink_frame_quote_author` | Matka Tereza |
+
+Pro citát nastav maximální délku například 255 znaků (limit stavu HA).
+Prázdný autor je přípustný. Hodnoty můžeš měnit ručně nebo automatizací;
+rámeček je načte při další aktualizaci s prázdným kalendářem. Dlouhý citát
+se na obrazovce zkrátí. Nedostupný pomocník vyvolá viditelnou chybu;
+program při živém provozu nedoplňuje ukázkový citát. Demo pomocníky nečte.
+
+Při přechodu z verze 0.3.1 nahraď textové volby `empty_calendar_quote` a
+`empty_calendar_author` novými volbami s příponou `_entity`, obsahujícími
+entity_id pomocníků. Aktualizovaný místní add-on 0.4.0 přestav a restartuj.
+
+### Kde změnit názvy HA entit
+
+Změnu prováděj v konfiguraci právě používaného způsobu instalace:
+
+| Údaj | HA OS: volba add-onu | Samostatný server: místní `config.json` |
+|---|---|---|
+| Kalendáře | `calendar_entities` | `calendar_entities` |
+| Venku | `outdoor_entity` | `metrics`: položka s `role: outdoor`, klíč `entity` |
+| Doma | `indoor_entity` | `metrics`: položka s `role: indoor`, klíč `entity` |
+| Maximum/předpověď | `max_temperature_entity` | `metrics`: položka s `role: outdoor_max`, klíč `entity` |
+| Citát | `empty_calendar_quote_entity` | `empty_calendar_quote_entity` |
+| Autor | `empty_calendar_author_entity` | `empty_calendar_author_entity` |
+
+Například `input_number.outdoor_effective_temperature` změníš na HA OS
+**jen v `max_temperature_entity`** v nastavení add-onu; potom jej restartuj.
+U samostatného serveru změníš **jen `entity` u `role: outdoor_max`** v
+`config.json` a restartuješ službu. Ponech `role`, protože podle ní renderer
+spojuje venkovní teplotu s maximem. Python ani firmware kvůli názvům entit
+upravovat nemusíš. V `.env` žádné názvy entit nejsou.
+
+Další výskyty jsou výchozí příklady: [config.example.json](config.example.json)
+a [addon/eink_frame/config.yaml](addon/eink_frame/config.yaml). Ty měň pouze,
+pokud chceš změnit projektové výchozí hodnoty pro nové instalace. README,
+[zadání](docs/zadani.md) a testovací data názvy rovněž zmiňují, ale živý
+provoz z nich konfiguraci nečte. Generovaný balíček `output/local-addon`
+eupravuj prostřednictvím zdrojů a `tools/package_addon.py`, nikoli ručně.
+
 ### Znovuvytvoření exportu projektu
 
 ```sh
 python3 tools/package_project.py
 ```
 
-Vytvoří výpis celého kódu a ZIP zdrojů s dokumentací a náhledy.
+Vytvoří rozcestník odkazů na zdroje a ZIP projektu s dokumentací a náhledy.
 
 ## Kvalita Python kódu
 

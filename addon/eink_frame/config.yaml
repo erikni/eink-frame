@@ -1,5 +1,5 @@
 name: E-ink Frame
-version: "0.3.1"
+version: "0.4.0"
 slug: eink_frame
 description: Datum, školní agenda a domácí údaje pro ESP32 e-ink rámeček
 arch:
@@ -16,8 +16,8 @@ options:
   frame_token: ""
   demo: true
   demo_empty_calendar: false
-  empty_calendar_quote: "Můžeme dělat malé věci s velkou láskou."
-  empty_calendar_author: "Matka Tereza"
+  empty_calendar_quote_entity: input_text.eink_frame_quote
+  empty_calendar_author_entity: input_text.eink_frame_quote_author
   timezone: Europe/Prague
   calendar_entities:
     - calendar.school
@@ -33,8 +33,8 @@ schema:
   frame_token: password
   demo: bool
   demo_empty_calendar: bool
-  empty_calendar_quote: str
-  empty_calendar_author: str
+  empty_calendar_quote_entity: str
+  empty_calendar_author_entity: str
   timezone: str
   calendar_entities:
     - str

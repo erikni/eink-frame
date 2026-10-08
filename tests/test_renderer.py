@@ -25,6 +25,51 @@ ZONE = ZoneInfo("Europe/Prague")
 class RendererTests(unittest.TestCase):
     """Exercise externally visible dashboard behavior and protocol boundaries."""
 
+    def test_quote_helpers_and_source_errors(self):
+        """Read configured helpers only for empty agendas and expose failures."""
+        now = datetime(2026, 10, 8, 12, tzinfo=ZONE)
+        responses = [{"state": "Vlastní citát"}, {"state": "Autor"}]
+        with patch.object(app, "collect", return_value=([], [], [])):
+            with patch.object(app, "api", side_effect=responses) as fetch:
+                data = app.collect_dashboard(CFG, now, False)
+            self.assertEqual((data.quote, data.author), ("Vlastní citát", "Autor"))
+            self.assertEqual(
+                fetch.call_args_list[0].args[0],
+                "/api/states/" + CFG["empty_calendar_quote_entity"],
+            )
+            with patch.object(app, "api", return_value={"state": "unavailable"}):
+                failed = app.collect_dashboard(CFG, now, False)
+            self.assertEqual(failed.errors, [app.QUOTE_ERROR])
+            self.assertEqual(failed.quote, "")
+        with patch.object(app, "collect", return_value=([], [], [app.CALENDAR_ERROR])):
+            with patch.object(app, "api") as fetch:
+                app.collect_dashboard(CFG, now, False)
+            fetch.assert_not_called()
+        with patch.object(app, "api") as fetch:
+            demo = app.collect_dashboard(CFG, now, True, True)
+        fetch.assert_not_called()
+        self.assertEqual(demo.quote, app.DEFAULT_QUOTE)
+
+    def test_custom_entities_keep_combined_temperatures(self):
+        """Changing IDs must preserve the role-based outdoor temperature row."""
+        config = json.loads(json.dumps(CFG))
+        for index, metric in enumerate(config["metrics"]):
+            metric["entity"] = f"sensor.custom_{index}"
+        rows = app.metric_rows(config, ["12,4 °C", "22 °C", "16,8 °C"])
+        self.assertEqual([value for _, value in rows], ["12.4 → 16.8 °C", "22 °C"])
+        rows = app.metric_rows(config, ["12,40 °C", "22 °C", "12,4 °C"])
+        self.assertEqual(rows[0][1], "12.4 °C")
+
+    def test_default_ha_url(self):
+        """Use the documented local HA address when HA_URL is absent."""
+        with patch.dict(app.os.environ, {"HA_TOKEN": "test-only"}, clear=True):
+            with patch.object(app, "urlopen") as fetch:
+                fetch.return_value.__enter__.return_value.read.return_value = b"{}"
+                self.assertEqual(app.api("/api/"), {})
+        self.assertEqual(
+            fetch.call_args.args[0].full_url, "http://homeassistant.local:8123/api/"
+        )
+
     def test_bitplanes_and_crc(self):
         """Verify active-low bit order, both planes and CRC over the complete body."""
         image = Image.new("RGB", (800, 480), "white")

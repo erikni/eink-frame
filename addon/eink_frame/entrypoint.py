@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from renderer.app import DEFAULT_AUTHOR, DEFAULT_QUOTE, Dashboard, serve, validate
+from renderer.app import Dashboard, serve, validate
 
 
 def config(options: dict[str, Any]) -> dict[str, Any]:
@@ -15,15 +15,24 @@ def config(options: dict[str, Any]) -> dict[str, Any]:
             "timezone": options["timezone"],
             "calendar_entities": options["calendar_entities"],
             "agenda_days": options["agenda_days"],
-            "empty_calendar_quote": options.get("empty_calendar_quote", DEFAULT_QUOTE),
-            "empty_calendar_author": options.get(
-                "empty_calendar_author", DEFAULT_AUTHOR
-            ),
+            "empty_calendar_quote_entity": options["empty_calendar_quote_entity"],
+            "empty_calendar_author_entity": options["empty_calendar_author_entity"],
             "metrics": [
-                {"entity": options["outdoor_entity"], "label": "VENKU", "unit": "°C"},
-                {"entity": options["indoor_entity"], "label": "DOMA", "unit": "°C"},
+                {
+                    "entity": options["outdoor_entity"],
+                    "role": "outdoor",
+                    "label": "VENKU",
+                    "unit": "°C",
+                },
+                {
+                    "entity": options["indoor_entity"],
+                    "role": "indoor",
+                    "label": "DOMA",
+                    "unit": "°C",
+                },
                 {
                     "entity": options["max_temperature_entity"],
+                    "role": "outdoor_max",
                     "label": "MAX DNES",
                     "unit": "°C",
                 },

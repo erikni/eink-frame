@@ -26,8 +26,7 @@ def main() -> None:
     )
     for name, hour, minute, empty in SCENARIOS:
         now = datetime(2026, 10, 8, hour, minute, tzinfo=ZoneInfo(config["timezone"]))
-        events, values, errors = renderer.collect(config, now, True)
-        data = renderer.DashboardData([] if empty else events, values, errors)
+        data = renderer.collect_dashboard(config, now, True, empty)
         image = renderer.render(config, now, data, True)
         destination = ROOT / "output" / (name + ".png")
         destination.parent.mkdir(parents=True, exist_ok=True)

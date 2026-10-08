@@ -1,4 +1,4 @@
-"""Export a readable source listing and project archive without local credentials."""
+"""Export a source link index and project archive without local credentials."""
 
 import zipfile
 from pathlib import Path
@@ -44,28 +44,10 @@ PREVIEW_FILES = [
 
 
 def source_listing() -> str:
-    """Create fenced code blocks for an explicit allowlist of project source files."""
-    sections = [
-        "# Kompletní zdrojový kód e-ink rámečku\n",
-        "Snapshot aktuálních zdrojů. Wi-Fi a tokeny doplň lokálně "
-        "podle secrets.example.h.\n",
-        "Instalace, nákup, zapojení a ověření jsou v docs/zadani.md.\n",
-    ]
-    languages = {
-        ".py": "python",
-        ".cpp": "cpp",
-        ".h": "cpp",
-        ".json": "json",
-        ".yaml": "yaml",
-        ".yml": "yaml",
-        ".ini": "ini",
-        ".toml": "toml",
-    }
-    for filename in CORE_FILES:
-        language = languages.get(Path(filename).suffix, "text")
-        contents = (ROOT / filename).read_text(encoding="utf-8").rstrip()
-        sections.append(f"\n## {filename}\n\n```{language}\n{contents}\n```\n")
-    return "\n".join(sections)
+    """Link to the actual source files without duplicating their contents."""
+    sections = ["# Zdrojové soubory e-ink rámečku\n"]
+    sections.extend(f"- [{filename}](../{filename})" for filename in CORE_FILES)
+    return "\n".join(sections) + "\n"
 
 
 def main() -> None:

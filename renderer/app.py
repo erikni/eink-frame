@@ -38,8 +38,8 @@ CALENDAR_ERROR = "Kalendář není dostupný"
 METRIC_ERROR = "Některé hodnoty nejsou dostupné"
 DEFAULT_QUOTE = "Můžeme dělat malé věci s velkou láskou."
 DEFAULT_AUTHOR = "Matka Tereza"
-OUTDOOR_ENTITY = "input_number.outdoor_temperature"
-MAX_TEMPERATURE_ENTITY = "input_number.outdoor_effective_temperature"
+DEFAULT_HA_URL = "http://homeassistant.local:8123"
+QUOTE_ERROR = "Citát nebo autor nejsou dostupné"
 LOGGER = logging.getLogger(__name__)
 MONTHS = (
     "ledna",
@@ -79,6 +79,8 @@ class DashboardData:
     events: list[Event]
     values: list[str]
     errors: list[str]
+    quote: str = ""
+    author: str = ""
 
 
 @dataclass
@@ -159,7 +161,7 @@ def parse_time(value: str, zone: tzinfo) -> datetime:
 
 def api(path: str) -> Any:
     """Fetch one HA REST resource using server-only credentials and a timeout."""
-    base = os.environ["HA_URL"].rstrip("/")
+    base = os.environ.get("HA_URL", DEFAULT_HA_URL).rstrip("/")
     if urlparse(base).scheme not in ("http", "https"):
         raise ValueError("HA_URL musí začínat http:// nebo https://")
     request = Request(
@@ -269,6 +271,30 @@ def collect(
     return events, values, sorted(set(calendar_errors + metric_errors))
 
 
+def collect_dashboard(
+    config: Configuration, now: datetime, demo: bool, empty_calendar: bool = False
+) -> DashboardData:
+    """Fetch quote helpers only when a successfully loaded agenda is empty."""
+    events, values, errors = collect(config, now, demo)
+    data = DashboardData([] if demo and empty_calendar else events, values, errors)
+    if data.events or CALENDAR_ERROR in data.errors:
+        return data
+    if demo:
+        data.quote, data.author = DEFAULT_QUOTE, DEFAULT_AUTHOR
+        return data
+    for attribute in ("quote", "author"):
+        try:
+            entity = config[f"empty_calendar_{attribute}_entity"]
+            state = api("/api/states/" + quote(entity, safe=""))["state"]
+            if not isinstance(state, str) or state in ("unknown", "unavailable"):
+                raise ValueError("Unavailable text helper")
+            setattr(data, attribute, state.strip())
+        except DATA_ERRORS:
+            if QUOTE_ERROR not in data.errors:
+                data.errors.append(QUOTE_ERROR)
+    return data
+
+
 @lru_cache(maxsize=64)
 def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
     """Cache Lato font instances; FONT_DIR may override the installed font directory."""
@@ -321,19 +347,15 @@ def metric_rows(
     """Merge outdoor temperature and its maximum into one sidebar row."""
     pairs = list(zip(config["metrics"], values))
     maximum = next(
-        (
-            value
-            for metric, value in pairs
-            if metric["entity"] == MAX_TEMPERATURE_ENTITY
-        ),
+        (value for metric, value in pairs if metric.get("role") == "outdoor_max"),
         None,
     )
-    has_outdoor = any(metric["entity"] == OUTDOOR_ENTITY for metric, _ in pairs)
+    has_outdoor = any(metric.get("role") == "outdoor" for metric, _ in pairs)
     rows = []
     for metric, value in pairs:
-        if has_outdoor and metric["entity"] == MAX_TEMPERATURE_ENTITY:
+        if has_outdoor and metric.get("role") == "outdoor_max":
             continue
-        if metric["entity"] == OUTDOOR_ENTITY and maximum is not None:
+        if metric.get("role") == "outdoor" and maximum is not None:
             current, top = temperature_number(value), temperature_number(maximum)
             value = (current if current == top else current + " → " + top) + " °C"
         rows.append((metric, value))
@@ -421,9 +443,7 @@ def _draw_empty_calendar(context: RenderContext) -> None:
             )
         return
     draw.text((MAIN_X - 3, 64), "“", font=font(84, True), fill=RED, anchor="lt")
-    lines = _quote_lines(
-        draw, context.config.get("empty_calendar_quote", DEFAULT_QUOTE)
-    )
+    lines = _quote_lines(draw, context.data.quote or "Citát není dostupný")
     for index, line in enumerate(lines):
         draw.text(
             (MAIN_X, 143 + index * 55),
@@ -434,7 +454,7 @@ def _draw_empty_calendar(context: RenderContext) -> None:
         )
     bottom = 143 + len(lines) * 55
     draw.line((MAIN_X, bottom + 20, MAIN_X + 54, bottom + 20), fill="black", width=2)
-    author = context.config.get("empty_calendar_author", DEFAULT_AUTHOR)
+    author = context.data.author
     draw.text(
         (MAIN_X, bottom + 39),
         fit(draw, author, font(17), MAIN_WIDTH),
@@ -545,7 +565,11 @@ def render(
     """Compose the sidebar, agenda/quote and footer without modifying input data."""
     image = Image.new("RGB", (WIDTH, HEIGHT), "white")
     visible_data = DashboardData(
-        visible_events(data.events, now), data.values, data.errors
+        visible_events(data.events, now),
+        data.values,
+        data.errors,
+        data.quote,
+        data.author,
     )
     context = RenderContext(ImageDraw.Draw(image), config, now, visible_data, demo)
     _draw_sidebar(context)
@@ -592,14 +616,12 @@ class Dashboard:
         """Fetch data, render and calculate wake-up after slow upstream calls finish."""
         with self.lock:
             now = datetime.now(ZoneInfo(self.cfg["timezone"]))
-            events, values, errors = collect(self.cfg, now, self.demo)
-            if self.demo and self.empty_calendar:
-                events = []
-            image = render(
-                self.cfg, now, DashboardData(events, values, errors), self.demo
-            )
+            data = collect_dashboard(self.cfg, now, self.demo, self.empty_calendar)
+            image = render(self.cfg, now, data, self.demo)
             sleep = (
-                300 if errors else next_wake(datetime.now(now.tzinfo), self.cfg, events)
+                300
+                if data.errors
+                else next_wake(datetime.now(now.tzinfo), self.cfg, data.events)
             )
             return image, packet(image, sleep)
 
@@ -674,8 +696,8 @@ def main() -> None:
     parser = _arguments()
     args = parser.parse_args()
     config = validate(json.loads(Path(args.config).read_text(encoding="utf-8")))
-    if not args.demo and not all(os.environ.get(key) for key in ("HA_URL", "HA_TOKEN")):
-        parser.error("Živý provoz vyžaduje HA_URL a HA_TOKEN; pro ukázku použij --demo")
+    if not args.demo and not os.environ.get("HA_TOKEN"):
+        parser.error("Živý provoz vyžaduje HA_TOKEN; pro ukázku použij --demo")
     if args.empty_calendar and not args.demo:
         parser.error("--empty-calendar vyžaduje --demo")
     dashboard = Dashboard(config, args.demo, args.empty_calendar)

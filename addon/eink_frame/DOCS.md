@@ -29,10 +29,16 @@ výpočet nebo načítání předpovědi musí zajistit automatizace v HA.
 ## Vzhled a prázdný kalendář
 
 Písmo Lato je součástí obrazu aplikace. Hlavní událost je tučná, číslo dne
-bez tečky. Bez událostí se zobrazuje citát a autor, které lze změnit v
-`empty_calendar_quote` a `empty_calendar_author`. Pokud načtení selže,
+bez tečky. Bez událostí se zobrazuje citát a autor, načítané z textových pomocníků HA. Jejich entity_id nastav v
+`empty_calendar_quote_entity` a `empty_calendar_author_entity`; výchozí jsou
+`input_text.eink_frame_quote` a `input_text.eink_frame_quote_author`.
+Pomocníky vytvoř v HA a vyplň jejich hodnoty. Pokud načtení selže,
 zobrazí se chyba. Při `demo: true` přepínač `demo_empty_calendar: true`
 ukáže náhled bez událostí; v živém režimu o stavu rozhodují skutečná data.
 
 Ukončené události se nezobrazují. Probíhající události mají červený podklad
 a bílý text. Černý pruh s datem a teplotami je vždy přes celou výšku.
+
+Názvy ostatních entit měň pouze v nastavení tohoto add-onu. Python ani
+firmware upravovat nemusíš. Podrobná tabulka a migrace z 0.3.1 jsou v
+[README](../../README.md#kde-změnit-názvy-ha-entit).

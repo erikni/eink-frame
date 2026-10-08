@@ -1,7 +1,7 @@
 # E-ink rámeček — sjednocené zadání a nákup
 
 Aktuální stav k 8. říjnu 2026. Toto je zadání poslední verze projektu.
-Zdrojové soubory jsou v projektu; jejich úplný výpis je v `output/cely-kod.md`.
+Zdrojové soubory jsou v projektu; odkazy na ně jsou v [rozcestníku zdrojů](../output/cely-kod.md).
 
 ## Cíl a architektura
 
@@ -120,7 +120,7 @@ Výdrž celé sestavy nelze odvodit z klidového proudu samotného ESP32.
 - Všechna input_number jsou hodnoty dodané HA; program předpověď ani maximum
   sám nepočítá. Jejich aktuálnost zajišťují automatizace v HA.
 - Agenda načítá dnešek a zítřek (`agenda_days: 2`, nastavitelné 1–7 dní).
-- Citát a autor jsou nastavitelné, výchozí text odpovídá referenci.
+- Citát a autor se načítají z textových pomocníků HA; demo používá ukázkový text.
 
 ### Vzhled
 
@@ -198,7 +198,7 @@ omezují přesnost začátků/konců. Zobrazené hodnoty zůstávají během sp�
 ## Aktuální stav a zbývající ověření
 
 Renderer, API, lokální add-on, firmware a náhledy jsou připravené ve zdrojích.
-Po refaktoru prošlo všech 9 testů včetně lokálního HTTP přenosu.
+Prošlo všech 12 testů včetně pomocníků HA a lokálního HTTP přenosu.
 Black a isort nemají nálezy; Pylint hodnotí kód 10,00/10. Všechny tři
 náhledy zůstaly pixel po pixelu shodné s původní verzí.
 Kompilace ESP32 se nedokončila kvůli nedostatku místa pro toolchain/framework.
@@ -208,3 +208,10 @@ Na tomto projektu zatím nebyl připojen skutečný panel ani tvůj HA OS.
 Není ověřená živá instalace add-onu, konkrétní revize panelu, skutečný odběr,
 pasování konektoru baterie, výdrž, vnitřní prostor rámečku ani finální držák.
 To jsou konkrétní kroky před potvrzením hotového bateriového výrobku.
+
+## Nastavení entit a textových pomocníků
+
+Citát: `input_text.eink_frame_quote`, autor: `input_text.eink_frame_quote_author`.
+Pomocníky vytvoř v HA. Entity změň v konfiguraci add-onu nebo samostatného
+serveru; Python ani firmware se neupravují. Podrobný postup, tabulka voleb
+a nastavení tokenů jsou v [README](../README.md#kde-změnit-názvy-ha-entit).
