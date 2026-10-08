@@ -1,0 +1,21 @@
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+include = '\.pyi?$'
+extend-exclude = '/(output|\.venv|\.buildcache|\.pio)/'
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["renderer"]
+skip_gitignore = false
+extend_skip = ["output", ".venv", ".buildcache", ".pio"]
+
+[tool.pylint.main]
+py-version = "3.12"
+persistent = false
+recursive = true
+ignore-paths = ['^output/', '^\.venv/', '^\.buildcache/', '^firmware/\.pio/']
+
+[tool.pylint.format]
+max-line-length = 88

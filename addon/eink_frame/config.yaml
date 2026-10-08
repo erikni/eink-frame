@@ -1,5 +1,5 @@
 name: E-ink Frame
-version: "0.3.0"
+version: "0.3.1"
 slug: eink_frame
 description: Datum, školní agenda a domácí údaje pro ESP32 e-ink rámeček
 arch:

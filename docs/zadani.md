@@ -198,7 +198,9 @@ omezují přesnost začátků/konců. Zobrazené hodnoty zůstávají během sp�
 ## Aktuální stav a zbývající ověření
 
 Renderer, API, lokální add-on, firmware a náhledy jsou připravené ve zdrojích.
-Byly ověřené logické testy, obrazové roviny a dříve lokální HTTP přenos.
+Po refaktoru prošlo všech 9 testů včetně lokálního HTTP přenosu.
+Black a isort nemají nálezy; Pylint hodnotí kód 10,00/10. Všechny tři
+náhledy zůstaly pixel po pixelu shodné s původní verzí.
 Kompilace ESP32 se nedokončila kvůli nedostatku místa pro toolchain/framework.
 Neexistuje potvrzení úspěšného sestavení ani nahrání firmware.
 

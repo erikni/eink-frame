@@ -215,7 +215,9 @@ omezují přesnost začátků/konců. Zobrazené hodnoty zůstávají během sp�
 ## Aktuální stav a zbývající ověření
 
 Renderer, API, lokální add-on, firmware a náhledy jsou připravené ve zdrojích.
-Byly ověřené logické testy, obrazové roviny a dříve lokální HTTP přenos.
+Po refaktoru prošlo všech 9 testů včetně lokálního HTTP přenosu.
+Black a isort nemají nálezy; Pylint hodnotí kód 10,00/10. Všechny tři
+náhledy zůstaly pixel po pixelu shodné s původní verzí.
 Kompilace ESP32 se nedokončila kvůli nedostatku místa pro toolchain/framework.
 Neexistuje potvrzení úspěšného sestavení ani nahrání firmware.
 
@@ -300,3 +302,29 @@ python3 tools/package_project.py
 ```
 
 Vytvoří výpis celého kódu a ZIP zdrojů s dokumentací a náhledy.
+
+## Kvalita Python kódu
+
+Kód používá Black (88 znaků na řádek), isort s profilem Black a Pylint.
+Společná konfigurace je v [pyproject.toml](pyproject.toml); nejsou plošně
+vypnuté kontroly složitosti, dokumentace ani stylu. Dvě lokální výjimky
+v HTTP handleru zachovávají názvy vyžadované `BaseHTTPRequestHandler`:
+`do_GET` a parametr `format` v `log_message`.
+
+```sh
+python -m pip install -r requirements-dev.txt
+python -m black --check renderer addon/eink_frame/entrypoint.py tools tests
+python -m isort --check-only renderer addon/eink_frame/entrypoint.py tools tests
+python -m pylint renderer addon/eink_frame/entrypoint.py tools tests
+python -m unittest discover -s tests -v
+```
+
+Pro automatické formátování vynech `--check` u Black a `--check-only` u isort.
+Stejné kontroly včetně testů spouští [GitHub Actions](.github/workflows/python.yml)
+při pushi a pull requestu na Pythonu 3.12.
+
+Renderer má oddělené funkce pro načítání dat, plánování, jednotlivé části
+obrazovky a HTTP přenos. Docstringy vysvětlují účel funkcí a komentáře
+zejména přechody letního času, hranice událostí, práci s přístupovými tokeny
+a bitový protokol. Datová třída `DashboardData` nese události, hodnoty a chyby;
+`render(config, now, data, demo=False)` přijímá tuto strukturu.
