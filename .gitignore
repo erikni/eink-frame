@@ -218,3 +218,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# E-ink frame local configuration and build artifacts
+.env
+config.json
+firmware/include/secrets.h
+firmware/.pio/
+__pycache__/
+output/*.bin
+.venv/
+output/local-addon/
+.buildcache/

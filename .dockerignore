@@ -1,0 +1,7 @@
+.env
+config.json
+.git
+firmware
+output
+__pycache__
+tests

@@ -1,8 +1,7 @@
 # E-ink rámeček — sjednocené zadání a nákup
 
 Aktuální stav k 8. říjnu 2026. Toto je zadání poslední verze projektu.
-Zdrojové soubory jsou v tomto repozitáři; [úplný výpis kódu](output/cely-kod.md)
-je přiložený také jako jeden čitelný soubor.
+Zdrojové soubory jsou v projektu; jejich úplný výpis je v `output/cely-kod.md`.
 
 ## Cíl a architektura
 
@@ -14,22 +13,6 @@ obnoví displej a přejde do hlubokého spánku. Home Assistant zůstává zapnu
 
 Google kalendář se připojí standardní integrací do Home Assistantu;
 rámeček čte její calendar entity. Další zdroje lze později doplnit v rendereru.
-
-## Tři varianty zobrazení
-
-Náhledy používají ukázková data a pevně zvolené časy.
-
-### Budoucí událost
-
-![Kalendář s budoucí událostí](output/preview-future.png)
-
-### Probíhající událost
-
-![Kalendář s probíhající událostí](output/preview-active.png)
-
-### Bez událostí v kalendáři
-
-![Prázdný kalendář s citátem](output/preview-empty.png)
 
 ## Nákup
 
@@ -223,80 +206,3 @@ Na tomto projektu zatím nebyl připojen skutečný panel ani tvůj HA OS.
 Není ověřená živá instalace add-onu, konkrétní revize panelu, skutečný odběr,
 pasování konektoru baterie, výdrž, vnitřní prostor rámečku ani finální držák.
 To jsou konkrétní kroky před potvrzením hotového bateriového výrobku.
-
-## Zdrojový kód a lokální spuštění
-
-| Soubor | Účel |
-|---|---|
-| [renderer/app.py](renderer/app.py) | Načtení HA dat, kalendář, obraz, plánování a HTTP server |
-| [firmware/src/main.cpp](firmware/src/main.cpp) | ESP32, stažení obrazu, SPI displej, hluboký spánek |
-| [firmware/platformio.ini](firmware/platformio.ini) | PlatformIO a knihovny |
-| [config.example.json](config.example.json) | Vzor konfigurace a konkrétní entity |
-| [addon/eink_frame](addon/eink_frame) | Místní aplikace pro Home Assistant OS |
-| [tests/test_renderer.py](tests/test_renderer.py) | Automatické testy |
-| [docs/mereni.md](docs/mereni.md) | Měření spotřeby, rozměrů a bateriový návrh |
-| [docs/protokol.md](docs/protokol.md) | Obrazový protokol EIF1 |
-| [output/cely-kod.md](output/cely-kod.md) | Kompletní čitelný výpis zdrojů |
-
-### Náhledy na počítači
-
-Python potřebuje fonty Lato (`fonts-lato` na Debian/Ubuntu); Docker je instaluje.
-
-```sh
-python3 -m venv .venv
-.venv/bin/pip install -r requirements-dev.txt
-cp config.example.json config.json
-.venv/bin/python tools/generate_previews.py
-.venv/bin/python -m unittest discover -s tests -v
-```
-
-Volitelně můžeš měnit cestu k fontům prostřednictvím `FONT_DIR`.
-
-### Instalace místní aplikace na Home Assistant OS
-
-```sh
-python3 tools/package_addon.py
-```
-
-Výsledek `output/local-addon/eink_frame` zkopíruj do `/addons/eink_frame` na HA OS.
-Podrobný [postup instalace a nastavení](addon/eink_frame/DOCS.md) je v dokumentaci.
-V konfiguraci aplikace nastav `frame_token` na náhodný řetězec alespoň 24 znaků.
-Nejprve zkus `demo: true`, poté přepni na skutečná data pomocí `demo: false`.
-`demo_empty_calendar: true` ukáže v demo režimu variantu s citátem.
-
-### Nahrání firmware
-
-```sh
-cp firmware/include/secrets.example.h firmware/include/secrets.h
-```
-
-Do `secrets.h` lokálně doplň Wi-Fi, heslo, `http://IP_HA:8080/frame.bin`
-a stejný FRAME_TOKEN jako v aplikaci. Následně:
-
-```sh
-cd firmware
-pio run
-pio run --target upload
-pio device monitor
-```
-
-### Alternativa: samostatný server s Dockerem
-
-```sh
-cp config.example.json config.json
-cp .env.example .env
-# Lokálně doplň HA_URL, HA_TOKEN a FRAME_TOKEN v .env.
-docker compose up --build -d
-```
-
-Tento režim používá dlouhodobý HA token; režim add-onu na HA OS používá
-interní Supervisor token. Přihlašovací údaje jsou v ignorovaných místních
-souborech `.env`, `config.json` a `firmware/include/secrets.h`.
-
-### Znovuvytvoření exportu projektu
-
-```sh
-python3 tools/package_project.py
-```
-
-Vytvoří výpis celého kódu a ZIP zdrojů s dokumentací a náhledy.

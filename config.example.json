@@ -1,0 +1,32 @@
+{
+  "timezone": "Europe/Prague",
+  "calendar_entities": [
+    "calendar.school"
+  ],
+  "agenda_days": 2,
+  "metrics": [
+    {
+      "entity": "input_number.outdoor_temperature",
+      "label": "VENKU",
+      "unit": "°C"
+    },
+    {
+      "entity": "input_number.natroom_temperature",
+      "label": "DOMA",
+      "unit": "°C"
+    },
+    {
+      "entity": "input_number.outdoor_effective_temperature",
+      "label": "MAX DNES",
+      "unit": "°C"
+    }
+  ],
+  "schedule": {
+    "day_start": 7,
+    "night_start": 22,
+    "day_minutes": 30,
+    "night_minutes": 120
+  },
+  "empty_calendar_quote": "Můžeme dělat malé věci s velkou láskou.",
+  "empty_calendar_author": "Matka Tereza"
+}

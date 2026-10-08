@@ -1,0 +1,48 @@
+name: E-ink Frame
+version: "0.3.0"
+slug: eink_frame
+description: Datum, školní agenda a domácí údaje pro ESP32 e-ink rámeček
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: auto
+homeassistant_api: true
+ports:
+  8080/tcp: 8080
+ports_description:
+  8080/tcp: Obraz pro ESP32 (vyžaduje FRAME_TOKEN)
+options:
+  frame_token: ""
+  demo: true
+  demo_empty_calendar: false
+  empty_calendar_quote: "Můžeme dělat malé věci s velkou láskou."
+  empty_calendar_author: "Matka Tereza"
+  timezone: Europe/Prague
+  calendar_entities:
+    - calendar.school
+  outdoor_entity: input_number.outdoor_temperature
+  indoor_entity: input_number.natroom_temperature
+  max_temperature_entity: input_number.outdoor_effective_temperature
+  agenda_days: 2
+  day_start: 7
+  night_start: 22
+  day_minutes: 30
+  night_minutes: 120
+schema:
+  frame_token: password
+  demo: bool
+  demo_empty_calendar: bool
+  empty_calendar_quote: str
+  empty_calendar_author: str
+  timezone: str
+  calendar_entities:
+    - str
+  outdoor_entity: str
+  indoor_entity: str
+  max_temperature_entity: str
+  agenda_days: int(1,7)
+  day_start: int(0,23)
+  night_start: int(0,23)
+  day_minutes: int(1,1440)
+  night_minutes: int(1,1440)
